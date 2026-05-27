@@ -18,8 +18,6 @@ public class Admin {
     @Column(unique = true, nullable = false)
     private String email;
 
-    // Free-text job title within admin staff, e.g. "SUPER_ADMIN", "MANAGER"
-    // Different from the Role enum (PATIENT/DOCTOR/ADMIN) which is a system concept
     private String role;
 
     @JsonIgnore

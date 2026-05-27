@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
  * POST /api/auth/login
  *   Body: { "email":"a@x.com", "password":"pw", "role":"PATIENT" }
  */
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

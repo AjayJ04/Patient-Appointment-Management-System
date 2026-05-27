@@ -60,24 +60,18 @@ public class AdminService {
 
     public List<Patient> getAllPatients() { return patientRepository.findAll(); }
 
-    /**
-     * Delete a patient and all of their appointments.
-     *
-     * Order matters:
-     *  1. Delete appointments (FK child rows) first.
-     *  2. Then delete the patient (FK parent row).
-     *
-     * Both deletes run inside a single transaction so the DB is never left
-     * in a half-deleted state if something goes wrong mid-way.
-     */
+    
     @Transactional
     public void deletePatient(Long patientId,String adminEmail) {
 
     	if (!patientRepository.existsById(patientId)) {
             throw new ResourceNotFoundException("Patient not found: " + patientId);
         }
+    	if (!adminRepository.existsByEmail(adminEmail)) {
+            throw new UnauthorizedActionException("Authorized Admin not found: " + adminEmail);
+        }
 
-        //prescriptionRepository.deleteByPatient_PatientId(patientId);
+        prescriptionRepository.deleteByPatient_PatientId(patientId);
         appointmentRepository.deleteByPatient_PatientId(patientId);
         patientRepository.deleteById(patientId);
         logsRepository.save(
@@ -115,22 +109,18 @@ public class AdminService {
 //    }
     
 
-    /**
-     * Delete a doctor along with all their appointments and blocked slots.
-     *
-     * Order:
-     *  1. Delete blocked_slot rows (references doctor).
-     *  2. Delete appointment rows (references doctor).
-     *  3. Delete the doctor row.
-     */
+    
     @Transactional
     public void deleteDoctor(Long doctorId, String adminEmail) {
 
     	if (!doctorRepository.existsById(doctorId)) {
             throw new ResourceNotFoundException("Doctor not found: " + doctorId);
         }
+    	if (!adminRepository.existsByEmail(adminEmail)) {
+            throw new UnauthorizedActionException("Authorized Admin not found: " + adminEmail);
+        }
 
-        //prescriptionRepository.deleteByDoctor_DoctorId(doctorId);
+        prescriptionRepository.deleteByDoctor_DoctorId(doctorId);
         blockedSlotRepository.deleteByDoctor_DoctorId(doctorId);
         appointmentRepository.deleteByDoctor_DoctorId(doctorId);
         doctorRepository.deleteById(doctorId);
@@ -138,8 +128,8 @@ public class AdminService {
 		logsRepository.save(
 		            new Logs(
 		                    "DELETE_DOCTOR",
-		                    adminEmail,   // later replace with logged-in user
-		                    "Doctor",
+		                    adminEmail,   
+		                    "DOCTOR",
 		                    doctorId,
 		                    LocalDateTime.now()
 		            )
@@ -173,6 +163,10 @@ public class AdminService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Admin not found: " + adminId)
                 );
+    	
+    	if (!adminRepository.existsByEmail(adminEmail)) {
+            throw new UnauthorizedActionException("Authorized Admin not found: " + adminEmail);
+        }
 
         if (request.getName() != null && !request.getName().isBlank()) {
             admin.setName(request.getName());
@@ -203,6 +197,9 @@ public class AdminService {
 
     	if (!adminRepository.existsById(adminId)) {
             throw new ResourceNotFoundException("Admin not found: " + adminId);
+        }
+    	if (!adminRepository.existsByEmail(adminEmail)) {
+            throw new UnauthorizedActionException("Authorized Admin not found: " + adminEmail);
         }
 
         adminRepository.deleteById(adminId);

@@ -17,4 +17,8 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
  
     // ✅ ✅ NEW: check if prescription already exists for appointment
     boolean existsByAppointmentAppointmentId(Long appointmentId);
+    
+    void deleteByPatient_PatientId(long patientId);
+    
+    void deleteByDoctor_DoctorId(long doctorId);
 }

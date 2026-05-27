@@ -11,19 +11,26 @@ import com.example.patientapp.repository.DoctorRepository;
 import com.example.patientapp.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+
+
 @Service
 public class AuthService {
 
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final AdminRepository adminRepository;
-
+    private final PasswordEncoder passwordEncoder;
+    
     public AuthService(PatientRepository patientRepository,
                        DoctorRepository doctorRepository,
-                       AdminRepository adminRepository) {
+                       AdminRepository adminRepository,
+                       PasswordEncoder passwordEncoder) {
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
         this.adminRepository = adminRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // — Register —
@@ -43,7 +50,7 @@ public class AuthService {
         Patient p = new Patient();
         p.setName(req.getName());
         p.setEmail(req.getEmail());
-        p.setPassword(req.getPassword());
+        p.setPassword(passwordEncoder.encode(req.getPassword()));
         p.setPhone(req.getPhone());
         p.setAddress(req.getAddress());
         p.setDob(req.getDob());
@@ -55,7 +62,7 @@ public class AuthService {
         Doctor d = new Doctor();
         d.setName(req.getName());
         d.setEmail(req.getEmail());
-        d.setPassword(req.getPassword());
+        d.setPassword(passwordEncoder.encode(req.getPassword()));
         d.setPhone(req.getPhone());
         d.setSpecialization(req.getSpecialization());
 
@@ -70,7 +77,7 @@ public class AuthService {
         Admin a = new Admin();
         a.setName(req.getName());
         a.setEmail(req.getEmail());
-        a.setPassword(req.getPassword());
+        a.setPassword(passwordEncoder.encode(req.getPassword()));
         a.setRole(req.getAdminRole());
         return adminRepository.save(a);
     }
@@ -78,29 +85,42 @@ public class AuthService {
     // — Login —
 
     public String login(LoginRequest req) {
-        if (req.getRole() == null) {
-            throw new RuntimeException("role is required: PATIENT, DOCTOR, or ADMIN");
-        }
-        return switch (req.getRole()) {
-            case PATIENT -> {
-                Patient p = patientRepository.findByEmail(req.getEmail())
-                        .orElseThrow(() -> new RuntimeException("No patient found with email: " + req.getEmail()));
-                if (!p.getPassword().equals(req.getPassword())) throw new RuntimeException("Incorrect password");
-                yield "Login successful. Welcome, " + p.getName() + " [PATIENT]";
-            }
-            case DOCTOR -> {
-                Doctor d = doctorRepository.findByEmail(req.getEmail())
-                        .orElseThrow(() -> new RuntimeException("No doctor found with email: " + req.getEmail()));
-                if (!d.getPassword().equals(req.getPassword())) throw new RuntimeException("Incorrect password");
-                yield "Login successful. Welcome, Dr. " + d.getName() + " [DOCTOR]";
-            }
-            case ADMIN -> {
-                Admin a = adminRepository.findByEmail(req.getEmail())
-                        .orElseThrow(() -> new RuntimeException("No admin found with email: " + req.getEmail()));
-                if (!a.getPassword().equals(req.getPassword())) throw new RuntimeException("Incorrect password");
-                yield "Login successful. Welcome, " + a.getName() + " [ADMIN]";
-            }
-        };
+    	if (req.getRole() == null) {
+    	    throw new RuntimeException("role is required: PATIENT, DOCTOR, or ADMIN");
+    	}
+
+    	return switch (req.getRole()) {
+
+    	    case PATIENT -> {
+    	        Patient p = patientRepository.findByEmail(req.getEmail())
+    	                .orElseThrow(() ->
+    	                        new RuntimeException("No patient found with email: " + req.getEmail()));
+    	        if (!passwordEncoder.matches(req.getPassword(), p.getPassword())) {
+    	            throw new RuntimeException("Incorrect password");
+    	        }
+    	        yield "Login successful. Welcome, " + p.getName() + " [PATIENT]";
+    	    }
+
+    	    case DOCTOR -> {
+    	        Doctor d = doctorRepository.findByEmail(req.getEmail())
+    	                .orElseThrow(() ->
+    	                        new RuntimeException("No doctor found with email: " + req.getEmail()));
+    	        if (!passwordEncoder.matches(req.getPassword(), d.getPassword())) {
+    	            throw new RuntimeException("Incorrect password");
+    	        }
+    	        yield "Login successful. Welcome, Dr. " + d.getName() + " [DOCTOR]";
+    	    }
+
+    	    case ADMIN -> {
+    	        Admin a = adminRepository.findByEmail(req.getEmail())
+    	                .orElseThrow(() ->
+    	                        new RuntimeException("No admin found with email: " + req.getEmail()));
+    	        if (!passwordEncoder.matches(req.getPassword(), a.getPassword())) {
+    	            throw new RuntimeException("Incorrect password");
+    	        }
+    	        yield "Login successful. Welcome, " + a.getName() + " [ADMIN]";
+    	    }
+    	};
     }
 
     // — Helper —

@@ -27,6 +27,7 @@ import java.util.List;
  *  - Cancel
  *  - View single / view all  (used by admin or direct lookup)
  */
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/appointments")
 public class AppointmentController {
